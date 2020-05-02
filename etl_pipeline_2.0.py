@@ -22,7 +22,7 @@ def clean_data(df):
     return df
     
 def save_data(df, database_filename):
-    engine = create_engine('sqlite:///InsertDatabaseName.db')
+    engine = create_engine('sqlite:///Disaster.db')
     df.to_sql('msg_category', engine, index=False)
 
 
