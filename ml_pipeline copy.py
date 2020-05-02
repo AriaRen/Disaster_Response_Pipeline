@@ -1,3 +1,4 @@
+import sys
 # import libraries
 import numpy as np
 import pandas as pd
@@ -9,6 +10,7 @@ import nltk
 nltk.download(['punkt', 'wordnet', 'averaged_perceptron_tagger'])
 nltk.download('stopwords')
 import re
+import pickle
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
@@ -21,12 +23,14 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.datasets import make_multilabel_classification
 from sklearn.multioutput import MultiOutputClassifier
 
-def load_data():
+
+def load_data(database_filepath):
     engine = create_engine('sqlite:///InsertDatabaseName.db')
     df = pd.read_sql("SELECT * FROM msg_category", engine)
     X = df.message.values
     y = df[df.columns[4:]].values
     return X, y
+
 
 def tokenize(text):
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
@@ -67,64 +71,76 @@ class StartingVerbExtractor(BaseEstimator, TransformerMixin):
         X_tagged = pd.Series(X).apply(self.starting_verb)
         return pd.DataFrame(X_tagged)
 
+
 def build_model():
     pipeline = Pipeline([
-        ('features', FeatureUnion([
 
             ('text_pipeline', Pipeline([
                 ('vect', CountVectorizer(tokenizer=tokenize)),
                 ('tfidf', TfidfTransformer())
             ])),
 
-            ('start_word', Pipeline([
-                ('starting_verb', StartingVerbExtractor())
-                #('starting_noun', StartingNounExtractor())
-            ]))
-                
-        ])),
-
-        ('clf', MultiOutputClassifier(RandomForestClassifier()))
-    ])
-
+            ('clf', MultiOutputClassifier(RandomForestClassifier()))
+        ])
+    
     parameters = {
-        'features__text_pipeline__vect__ngram_range': ((1, 1), (1, 2)),
-        'features__text_pipeline__vect__max_df': (0.5, 0.75, 1.0),
-        'features__text_pipeline__vect__max_features': (None, 5000),
-        'features__text_pipeline__tfidf__use_idf': (True, False),
-        
-        'clf__estimator__n_estimators': [100, 200],
-        'clf__estimator__min_samples_split':[2, 3, 4],
-        
-        'features__transformer_weights': (
-            {'text_pipeline': 1, 'starting_verb': 0.25},
-            {'text_pipeline': 0.5, 'starting_verb': 1},
-            {'text_pipeline': 0.8, 'starting_verb': 0.2}
-        )
+    'text_pipeline__vect__ngram_range': [(1, 1)],
+    'clf__estimator__n_estimators': [10]
+    #'clf__estimator__min_samples_split':[2, 3],
     }
 
-    cv = GridSearchCV(pipeline, param_grid=parameters, n_jobs = -1)
+    cv = GridSearchCV(pipeline, param_grid=parameters, n_jobs=-1)
 
     return cv
+    
 
-def display_results(cv, y_test, y_pred):
-    labels = np.unique(y_pred)
-    confusion_mat = confusion_matrix(y_test, y_pred, labels=labels)
-    accuracy = (y_pred == y_test).mean()
 
-    print("Labels:", labels)
-    print("Confusion Matrix:\n", confusion_mat)
+def display_results(cv, Y_test, Y_pred):
+    #labels = np.unique(Y_pred)
+    #confusion_mat = confusion_matrix(Y_test, Y_pred, labels=labels)
+    accuracy = (Y_pred == Y_test).mean()
+
+    #print("Labels:", labels)
+    #print("Confusion Matrix:\n", confusion_mat)
     print("Accuracy:", accuracy)
     print("\nBest Parameters:", cv.best_params_)
 
 
+
+def save_model(model, model_filepath):
+    pickle.dump(model, open(model_filepath, 'wb'))
+
+
 def main():
-    X, y = load_data()[:10]
-    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    if len(sys.argv) == 3:
+        database_filepath, model_filepath = sys.argv[1:]
+        print('Loading data...\n    DATABASE: {}'.format(database_filepath))
+        X, Y = load_data(database_filepath)
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+        
+        print('Building model...')
+        model = build_model()
+        
+        print('Training model...')
+        model.fit(X_train, Y_train)
+        
+        print('Predict model...')
+        Y_pred = model.predict(X_test)
+        
+        print('Evaluating model...')
+        display_results(model, Y_test, Y_pred)
 
-    model = build_model()
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
+        print('Saving model...\n    MODEL: {}'.format(model_filepath))
+        save_model(model, model_filepath)
 
-    display_results(model, y_test, y_pred)
+        print('Trained model saved!')
 
-main()
+    else:
+        print('Please provide the filepath of the disaster messages database '\
+              'as the first argument and the filepath of the pickle file to '\
+              'save the model to as the second argument. \n\nExample: python '\
+              'train_classifier.py ../data/DisasterResponse.db classifier.pkl')
+
+
+if __name__ == '__main__':
+    main()
