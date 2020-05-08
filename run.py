@@ -26,9 +26,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///.../data/Disaster.db')
-df = pd.read_sql("SELECT * FROM msg_category", engine)
-
+#engine = create_engine('sqlite:///../Disaster.db')
+#df = pd.read_sql("SELECT * FROM msg", engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('msg', engine)
+df = df.astype({"related": int})
 # load model
 model = joblib.load("../models/classifier.pkl")
 
@@ -42,6 +44,10 @@ def index():
     # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
+    category_names = df.columns[4:].tolist()
+    category_counts = df[df.columns[4:]].astype(int).sum().tolist()
+    related_counts = df.groupby(by = "genre")['related'].sum()
+    rel_genre_names = list(related_counts.index)
     
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
@@ -56,6 +62,42 @@ def index():
 
             'layout': {
                 'title': 'Distribution of Message Genres',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Response Category',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Response Category"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=rel_genre_names,
+                    y=related_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Related Genres',
                 'yaxis': {
                     'title': "Count"
                 },
@@ -81,8 +123,16 @@ def go():
     query = request.args.get('query', '') 
 
     # use model to predict classification for query
+    result = model.predict([query])
+#     classification_labels = []
+#     for i in range(36):
+#         if result[i] == '1':
+#             classification_labels += df.columns[4:][i]
+    
     classification_labels = model.predict([query])[0]
+    print(classification_labels)
     classification_results = dict(zip(df.columns[4:], classification_labels))
+    print(classification_results)
 
     # This will render the go.html Please see that file. 
     return render_template(
@@ -98,3 +148,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+print(classification_label)
+print(result)

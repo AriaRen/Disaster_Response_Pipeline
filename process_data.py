@@ -21,9 +21,9 @@ def clean_data(df):
     df = df.drop_duplicates()
     return df
     
-def save_data(df, database_filename):
-    engine = create_engine('sqlite:///Disaster.db')
-    df.to_sql('msg_category', engine, index=False)
+def save_data(df, database_filepath):
+    engine = create_engine(f'sqlite:///{database_filepath}')
+    df.to_sql('msg', engine, index=False)
 
 
 def main():

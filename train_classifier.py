@@ -25,8 +25,8 @@ from sklearn.multioutput import MultiOutputClassifier
 
 
 def load_data(database_filepath):
-    engine = create_engine('sqlite:///InsertDatabaseName.db')
-    df = pd.read_sql("SELECT * FROM msg_category", engine)
+    engine = create_engine('sqlite:///../data/DisasterResponse.db')
+    df = pd.read_sql("SELECT * FROM msg", engine)
     X = df.message.values
     y = df[df.columns[4:]].values
     return X, y
@@ -86,7 +86,7 @@ def build_model():
     parameters = {
     'text_pipeline__vect__ngram_range': [(1, 1), (1, 2)],
     'clf__estimator__n_estimators': [10, 20],
-    'clf__estimator__min_samples_split':[2, 3, 4]
+    'clf__estimator__min_samples_split': [2, 3, 4]
     }
 
     cv = GridSearchCV(pipeline, param_grid=parameters, n_jobs=-1)
