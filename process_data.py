@@ -1,3 +1,4 @@
+#load packages I need and the data I selected for project
 import sys
 import pandas as pd
 import numpy as np
@@ -5,6 +6,14 @@ from sqlalchemy import create_engine
 
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+    INPUT
+    message_filepath - a string representing file path of messages.csv
+    categories_filepath - a string representing file path of categories.csv
+    
+    OUTPUT
+    df - a pandas dataframe resulted from 2 data source
+    '''
     messages = pd.read_csv(messages_filepath)
     categories = pd.read_csv(categories_filepath)
     df = messages.merge(categories, how='inner', on='id')
@@ -12,6 +21,13 @@ def load_data(messages_filepath, categories_filepath):
 
 
 def clean_data(df):
+    '''
+    INPUT
+    df - a pandas dataframe resulted from 2 data source
+    
+    OUTPUT
+    df - a pandas dataframe after cleaning and transforming
+    '''
     category_name = df.categories.str.split(";", expand=True).loc[1,:].apply(lambda x: x[:-2])
     df_category = df.categories.str.split(";", expand=True)
     df_category.columns = category_name
@@ -22,6 +38,14 @@ def clean_data(df):
     return df
     
 def save_data(df, database_filepath):
+    '''
+    INPUT
+    df - a pandas dataframe
+    database_filepath: the file path where we want to save dataframe result 
+
+    OUTPUT
+    No outpue, the dataframe is saved to data_filepath
+    '''
     engine = create_engine(f'sqlite:///{database_filepath}')
     df.to_sql('msg', engine, index=False)
 

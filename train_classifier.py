@@ -1,5 +1,5 @@
+# import libraries and packages
 import sys
-# import libraries
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
@@ -25,6 +25,13 @@ from sklearn.multioutput import MultiOutputClassifier
 
 
 def load_data(database_filepath):
+    '''
+    INPUT
+    data_filepath - a string representing file path from where we can load data
+    
+    OUTPUT
+    X, y - python pandas series or dataframe representing X and y used for modeling
+    '''
     engine = create_engine('sqlite:///../data/DisasterResponse.db')
     df = pd.read_sql("SELECT * FROM msg", engine)
     X = df.message.values
@@ -33,6 +40,14 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    '''
+    INPUT
+    text - a string to be tokenized and cleaned for model purpose
+    
+    OUTPUT
+    clean_tokens - a list containing cleaned words and elements in the string to be used for modeling
+    '''
+
     url_regex = 'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
     detected_url = re.findall(url_regex, text)
     for url in detected_url:
@@ -50,29 +65,36 @@ def tokenize(text):
     
     return clean_tokens
 
-class StartingVerbExtractor(BaseEstimator, TransformerMixin):
+# class StartingVerbExtractor(BaseEstimator, TransformerMixin):
 
-    def starting_verb(self, text):
-        sentence_list = nltk.sent_tokenize(text)
-        for sentence in sentence_list:
-            pos_tags = nltk.pos_tag(tokenize(sentence))
-            try:
-                first_word, first_tag = pos_tags[0]
-                if first_tag in ['VB', 'VBP']:
-                    return True
-            except:
-                return False
-        return False
+#     def starting_verb(self, text):
+#         sentence_list = nltk.sent_tokenize(text)
+#         for sentence in sentence_list:
+#             pos_tags = nltk.pos_tag(tokenize(sentence))
+#             try:
+#                 first_word, first_tag = pos_tags[0]
+#                 if first_tag in ['VB', 'VBP']:
+#                     return True
+#             except:
+#                 return False
+#         return False
 
-    def fit(self, x, y=None):
-        return self
+#     def fit(self, x, y=None):
+#         return self
 
-    def transform(self, X):
-        X_tagged = pd.Series(X).apply(self.starting_verb)
-        return pd.DataFrame(X_tagged)
+#     def transform(self, X):
+#         X_tagged = pd.Series(X).apply(self.starting_verb)
+#         return pd.DataFrame(X_tagged)
 
 
 def build_model():
+    '''
+    INPUT
+    Nothing
+    
+    OUTPUT
+    cv - a python scikit learn model after pipeline and grid search 
+    '''
     pipeline = Pipeline([
 
             ('text_pipeline', Pipeline([
@@ -96,6 +118,16 @@ def build_model():
 
 
 def display_results(cv, Y_test, Y_pred):
+    '''
+    INPUT
+    cv - a python scikit learn model after pipeline and grid search 
+    Y_test - a pandas series representing existed test Y data
+    Y_pred - a pandas series representing numbers predicted by the model we just created 
+
+    OUTPUT
+    Accuracy - a float representing accuracy rate to demonstrate model performance 
+    Best Parameters - a list containing best parameters resulted from grid search 
+    '''
     #labels = np.unique(Y_pred)
     #confusion_mat = confusion_matrix(Y_test, Y_pred, labels=labels)
     accuracy = (Y_pred == Y_test).mean()
@@ -108,6 +140,16 @@ def display_results(cv, Y_test, Y_pred):
 
 
 def save_model(model, model_filepath):
+    '''
+    INPUT
+    cv - a python scikit learn model after pipeline and grid search 
+    Y_test - a pandas series representing existed test Y data
+    Y_pred - a pandas series representing numbers predicted by the model we just created 
+
+    OUTPUT
+    Accuracy - a float representing accuracy rate to demonstrate model performance 
+    Best Parameters - a list containing best parameters resulted from grid search 
+    '''
     pickle.dump(model, open(model_filepath, 'wb'))
 
 

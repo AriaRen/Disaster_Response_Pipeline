@@ -1,10 +1,9 @@
+#load packages I need and the data I selected for project
 import json
 import plotly
 import pandas as pd
-
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
-
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
@@ -15,6 +14,14 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 def tokenize(text):
+    '''
+    INPUT
+    text - a string to be tokenized and cleaned for model purpose
+    
+    OUTPUT
+    clean_tokens - a list containing cleaned words and elements in the string to be used for modeling
+    '''
+
     tokens = word_tokenize(text)
     lemmatizer = WordNetLemmatizer()
 
@@ -25,13 +32,11 @@ def tokenize(text):
 
     return clean_tokens
 
-# load data
-#engine = create_engine('sqlite:///../Disaster.db')
-#df = pd.read_sql("SELECT * FROM msg", engine)
+# load data from sql table
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
 df = pd.read_sql_table('msg', engine)
 df = df.astype({"related": int})
-# load model
+# load model from saved pickle file 
 model = joblib.load("../models/classifier.pkl")
 
 
