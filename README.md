@@ -18,4 +18,4 @@ For this project, I was interested in predicting message categories during disas
 There are 3 python files available here to showcase work related to data transformation, data modeling and app development. The python scripts include data and package loading, data cleaning, transformation, model building and app development. 
 
 ## Results
-The main findings, which is the web app can be found by running scripts. 
+The main findings, which is the web app can be found by running python scripts. 
